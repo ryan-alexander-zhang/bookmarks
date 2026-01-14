@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const MAX_NAME_LENGTH = 40;
-const NAME_PATTERN = /^[A-Za-z0-9 _-]+$/;
+const NAME_PATTERN = /^[A-Za-z0-9 _/\-]+$/;
 
 interface ToastState {
   message: string;
@@ -124,7 +124,7 @@ export function ManageNameList<T extends NameListItem>({
       return `${entityLabel} name must be at most ${MAX_NAME_LENGTH} characters.`;
     }
     if (!NAME_PATTERN.test(trimmed)) {
-      return "Only letters, numbers, spaces, - and _ are allowed.";
+      return "Only letters, numbers, spaces, /, - and _ are allowed.";
     }
 
     const normalized = trimmed.toLowerCase();

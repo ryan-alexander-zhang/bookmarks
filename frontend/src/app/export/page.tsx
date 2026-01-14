@@ -20,8 +20,11 @@ export default function ExportPage() {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename=([^;]+)/i);
+      const filename = match ? match[1].replace(/"/g, "") : "bookmarks.html";
       link.href = url;
-      link.download = "bookmarks.html";
+      link.download = filename;
       link.click();
       window.URL.revokeObjectURL(url);
     } catch (error) {
