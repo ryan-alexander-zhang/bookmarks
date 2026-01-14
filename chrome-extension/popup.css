@@ -1,0 +1,93 @@
+:root {
+  color-scheme: light;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  width: 320px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.header h1 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field span {
+  font-size: 12px;
+  color: #334155;
+}
+
+input,
+textarea {
+  border: 1px solid #cbd5f5;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.primary {
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.link-button {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.hint {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+.status {
+  font-size: 12px;
+  margin: 0;
+  color: #0f172a;
+}
+
+.status.error {
+  color: #dc2626;
+}

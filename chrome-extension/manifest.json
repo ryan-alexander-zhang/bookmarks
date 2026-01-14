@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Bookmarks Manager",
+  "description": "Quickly save the current page into your self-hosted bookmarks manager.",
+  "version": "1.0.0",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["http://localhost:8083/*", "http://127.0.0.1:8083/*"],
+  "action": {
+    "default_title": "Save bookmark",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  }
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bookmark Extension Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Settings</h1>
+      <p class="hint">Blacklist entries block saving when the URL contains any entry.</p>
+
+      <label class="field">
+        <span>Blacklist (one per line)</span>
+        <textarea id="blacklist" rows="10"></textarea>
+      </label>
+
+      <div class="actions">
+        <button id="save" type="button" class="primary">Save</button>
+        <button id="reset" type="button" class="secondary">Reset to defaults</button>
+      </div>
+
+      <p id="status" class="status"></p>
+    </main>
+
+    <script src="defaults.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>

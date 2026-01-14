@@ -1,0 +1,12 @@
+# Environment
+.env
+
+# Node
+node_modules
+.next
+
+# Go
+/bin/
+
+# Logs
+*.log
