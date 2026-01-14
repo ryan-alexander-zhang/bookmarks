@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Search, Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { FilterMultiSelect } from "@/components/filter-multi-select";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
@@ -55,10 +55,12 @@ export default function HomePage() {
       .catch(() => undefined);
   }, []);
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    loadData(1);
-  };
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      loadData(1);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [query, selectedCategories, selectedTags]);
 
   const handleExport = async () => {
     try {
@@ -104,43 +106,52 @@ export default function HomePage() {
         }
       />
 
-      <SectionCard title="Filters">
-        <form className="space-y-4" onSubmit={handleSearch}>
-          <Input
-            placeholder="Search by title, description, or URL"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="space-y-6">
+          <SectionCard title="Search">
+            <Input
+              placeholder="Search by title, description, or URL"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </SectionCard>
+
+          <SectionCard title="Results">
+            {data ? <BookmarkTable items={data.items} /> : <p className="text-sm">No data.</p>}
+            {data ? (
+              <div className="mt-4">
+                <Pagination
+                  page={data.pagination.page}
+                  pageSize={data.pagination.pageSize}
+                  total={data.pagination.total}
+                  onPageChange={(next) => loadData(next)}
+                />
+              </div>
+            ) : null}
+          </SectionCard>
+        </div>
+
+        <aside className="space-y-6">
+          <SectionCard title="Categories">
             <FilterMultiSelect
               label="Categories"
               options={categories}
               selected={selectedCategories}
               onChange={setSelectedCategories}
+              searchPlaceholder="Search categories"
             />
-            <FilterMultiSelect label="Tags" options={tags} selected={selectedTags} onChange={setSelectedTags} />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            <Search className="h-4 w-4" />
-            {loading ? "Loading..." : "Apply filters"}
-          </Button>
-        </form>
-      </SectionCard>
-
-
-      <SectionCard title="Results">
-        {data ? <BookmarkTable items={data.items} /> : <p className="text-sm">No data.</p>}
-        {data ? (
-          <div className="mt-4">
-            <Pagination
-              page={data.pagination.page}
-              pageSize={data.pagination.pageSize}
-              total={data.pagination.total}
-              onPageChange={(next) => loadData(next)}
+          </SectionCard>
+          <SectionCard title="Tags">
+            <FilterMultiSelect
+              label="Tags"
+              options={tags}
+              selected={selectedTags}
+              onChange={setSelectedTags}
+              searchPlaceholder="Search tags"
             />
-          </div>
-        ) : null}
-      </SectionCard>
+          </SectionCard>
+        </aside>
+      </div>
     </div>
   );
 }
