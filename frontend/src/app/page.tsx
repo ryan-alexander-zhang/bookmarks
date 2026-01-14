@@ -22,15 +22,18 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
 
-  const loadData = async (pageNumber = 1) => {
+  const loadData = async (
+    pageNumber = 1,
+    overrides?: { query?: string; category?: string; tag?: string }
+  ) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: pageNumber.toString(),
         page_size: "20",
-        q: query,
-        category,
-        tags: tag ? tag : ""
+        q: overrides?.query ?? query,
+        category: overrides?.category ?? category,
+        tags: overrides?.tag ?? tag
       });
       const result = await fetchJson<BookmarkListResponse>(`/bookmarks?${params.toString()}`);
       setData(result);
@@ -57,7 +60,7 @@ export default function HomePage() {
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    loadData(1);
+    loadData(1, { query });
   };
 
   const handleExport = async () => {
@@ -104,13 +107,25 @@ export default function HomePage() {
       <SectionCard title="Filters">
         <form className="grid gap-4 md:grid-cols-4" onSubmit={handleSearch}>
           <div className="md:col-span-2">
-            <Input
-              placeholder="Search by title, description, or URL"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Search by title, description, or URL"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <Button type="submit" variant="outline" className="px-3" disabled={loading}>
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <Select value={category} onChange={(event) => setCategory(event.target.value)}>
+          <Select
+            value={category}
+            onChange={(event) => {
+              const value = event.target.value;
+              setCategory(value);
+              loadData(1, { category: value });
+            }}
+          >
             <option value="">All categories</option>
             {categories.map((item) => (
               <option key={item.id} value={item.name}>
@@ -118,7 +133,14 @@ export default function HomePage() {
               </option>
             ))}
           </Select>
-          <Select value={tag} onChange={(event) => setTag(event.target.value)}>
+          <Select
+            value={tag}
+            onChange={(event) => {
+              const value = event.target.value;
+              setTag(value);
+              loadData(1, { tag: value });
+            }}
+          >
             <option value="">All tags</option>
             {tags.map((item) => (
               <option key={item.id} value={item.name}>
@@ -126,10 +148,6 @@ export default function HomePage() {
               </option>
             ))}
           </Select>
-          <Button type="submit" className="md:col-span-4 w-full" disabled={loading}>
-            <Search className="h-4 w-4" />
-            {loading ? "Loading..." : "Apply filters"}
-          </Button>
         </form>
       </SectionCard>
 
