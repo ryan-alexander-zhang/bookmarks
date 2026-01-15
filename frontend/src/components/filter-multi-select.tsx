@@ -132,7 +132,7 @@ export function FilterMultiSelect({
                 <div key={group.label} className="space-y-2">
                   {group.label ? (
                     <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                      <label className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 pl-1">
                         <Checkbox checked={allSelected} onCheckedChange={() => toggleGroup(group.label, group.items)} />
                         <span className="font-medium uppercase tracking-wide">{group.label}</span>
                       </label>
@@ -146,7 +146,7 @@ export function FilterMultiSelect({
                     </div>
                   ) : null}
                   {isExpanded ? (
-                    <div className="space-y-2">
+                    <div className="space-y-2 pl-6">
                       {group.items.map((option) => (
                         <label key={option.id} className="flex items-center gap-2 text-sm">
                           <Checkbox
