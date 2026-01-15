@@ -30,17 +30,19 @@
 
       <label class="field">
         <span>Category</span>
-        <input id="category" name="category" type="text" list="category-list" placeholder="Optional" />
+        <div class="suggestion-wrapper">
+          <input id="category" name="category" type="text" placeholder="Optional" />
+          <div id="category-suggestions" class="suggestion-list"></div>
+        </div>
       </label>
 
       <label class="field">
         <span>Tags</span>
-        <input id="tags" name="tags" type="text" placeholder="Comma separated" />
+        <div class="suggestion-wrapper">
+          <input id="tags" name="tags" type="text" placeholder="Comma separated" />
+          <div id="tag-suggestions" class="suggestion-list"></div>
+        </div>
       </label>
-
-      <datalist id="category-list"></datalist>
-
-      <p id="tag-suggestions" class="hint"></p>
       <p id="metadata-status" class="hint"></p>
       <p id="status" class="status"></p>
 
