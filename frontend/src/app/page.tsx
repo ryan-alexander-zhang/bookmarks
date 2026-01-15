@@ -22,7 +22,10 @@ export default function HomePage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const loadData = async (pageNumber = 1) => {
+  const loadData = async (
+    pageNumber = 1,
+    overrides?: { query?: string; category?: string; tag?: string }
+  ) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
