@@ -113,7 +113,7 @@ export function FilterMultiSelect({
         onChange={(event) => setSearch(event.target.value)}
         placeholder={searchPlaceholder || `Search ${label.toLowerCase()}`}
       />
-      <div className="max-h-56 space-y-3 overflow-y-auto rounded-md border bg-background p-3">
+      <div className="max-h-100 space-y-3 overflow-y-auto rounded-md border bg-background p-3">
         {filteredOptions.length === 0 ? (
           <p className="text-xs text-muted-foreground">No matches.</p>
         ) : (
