@@ -5,6 +5,17 @@ import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
 import { TagInput } from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { fetchJson } from "@/lib/api";
 import type { Category, Rule } from "@/lib/types";
@@ -90,13 +101,6 @@ export default function SettingsPage() {
   };
 
   const clearAllData = async () => {
-    const confirmed = window.confirm(
-      "This will delete all bookmarks, tags, and categories. This action cannot be undone."
-    );
-    if (!confirmed) {
-      return;
-    }
-
     try {
       await fetchJson("/settings/clear", { method: "POST" });
       loadData();
@@ -141,9 +145,27 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">
             Clear all bookmarks, tags, and categories. Rules will remain intact.
           </p>
-          <Button variant="destructive" onClick={clearAllData}>
-            Clear all data
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                Clear all data
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear all data</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will delete all bookmarks, tags, and categories. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={clearAllData}>
+                  Clear all
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </SectionCard>
 
@@ -244,6 +266,7 @@ function RuleRow({
     category: rule.categoryName || "",
     tags: rule.tags.map((tag) => tag.name)
   });
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     setValue({
@@ -299,9 +322,27 @@ function RuleRow({
         </div>
         <div className="flex flex-wrap items-center gap-2 md:col-span-2">
           <Button type="submit">Save</Button>
-          <Button type="button" variant="destructive" onClick={onDelete}>
-            Delete
-          </Button>
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive">
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete rule</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Delete rule “{rule.name}”? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={onDelete}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </form>
       <datalist id="settings-category-list">

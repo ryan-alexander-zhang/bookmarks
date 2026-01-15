@@ -4,6 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 
 const MAX_NAME_LENGTH = 40;
 const NAME_PATTERN = /^[A-Za-z0-9 _/\-]+$/;
@@ -57,7 +67,6 @@ export function ManageNameList<T extends NameListItem>({
   const [isSaving, setIsSaving] = useState(false);
 
   const newInputRef = useRef<HTMLInputElement>(null);
-  const cancelRef = useRef<HTMLButtonElement>(null);
   const toastTimeout = useRef<number | null>(null);
 
   const filteredItems = useMemo(() => {
@@ -93,19 +102,6 @@ export function ManageNameList<T extends NameListItem>({
     load();
   }, []);
 
-  useEffect(() => {
-    if (!confirmItem) {
-      return;
-    }
-    cancelRef.current?.focus();
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setConfirmItem(null);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [confirmItem]);
 
   useEffect(() => {
     return () => {
@@ -378,24 +374,22 @@ export function ManageNameList<T extends NameListItem>({
         </div>
       ) : null}
 
-      {confirmItem ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-md border bg-background p-4 shadow-lg space-y-3">
-            <div className="text-sm font-semibold">Delete {entityLabel}</div>
-            <p className="text-sm text-muted-foreground">
-              Delete {entityLabel} “{confirmItem.name}”? This cannot be undone.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button ref={cancelRef} variant="outline" onClick={() => setConfirmItem(null)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={deleteConfirmed} disabled={isSaving}>
-                Delete
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <AlertDialog open={Boolean(confirmItem)} onOpenChange={(open) => !open && setConfirmItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {entityLabel}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete {entityLabel} “{confirmItem?.name}”? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={deleteConfirmed} disabled={isSaving}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

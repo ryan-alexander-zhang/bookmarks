@@ -42,6 +42,15 @@ export default function HomePage() {
     }
   };
 
+  const handleTagClick = (tagName: string) => {
+    setSelectedTags((current) => (current.includes(tagName) ? current : [...current, tagName]));
+  };
+
+  const handleRemove = async (bookmarkId: string) => {
+    await fetchJson(`/bookmarks/${bookmarkId}`, { method: "DELETE" });
+    loadData(page);
+  };
+
   useEffect(() => {
     loadData(1);
   }, []);
@@ -117,7 +126,11 @@ export default function HomePage() {
           </SectionCard>
 
           <SectionCard title="Results">
-            {data ? <BookmarkTable items={data.items} /> : <p className="text-sm">No data.</p>}
+            {data ? (
+              <BookmarkTable items={data.items} onTagClick={handleTagClick} onRemove={handleRemove} />
+            ) : (
+              <p className="text-sm">No data.</p>
+            )}
             {data ? (
               <div className="mt-4">
                 <Pagination
