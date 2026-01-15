@@ -3,7 +3,7 @@ const titleInput = document.getElementById("title");
 const descriptionInput = document.getElementById("description");
 const categoryInput = document.getElementById("category");
 const tagsInput = document.getElementById("tags");
-const categoryList = document.getElementById("category-list");
+const categorySuggestions = document.getElementById("category-suggestions");
 const tagSuggestions = document.getElementById("tag-suggestions");
 const metadataStatus = document.getElementById("metadata-status");
 const status = document.getElementById("status");
@@ -17,6 +17,10 @@ let tagsEdited = false;
 let currentBlacklist = [];
 let activeTabId = null;
 let lastFetchedUrl = null;
+let cachedCategories = [];
+let cachedTags = [];
+let categoryHighlight = -1;
+let tagHighlight = -1;
 
 const fetchJson = async (path, options) => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -46,6 +50,37 @@ const normalizeTags = (value) =>
     .map((tag) => tag.trim())
     .filter(Boolean);
 
+const showSuggestions = (container, items, highlightIndex, onSelect) => {
+  container.innerHTML = "";
+  items.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `suggestion-item${index === highlightIndex ? " active" : ""}`;
+    button.textContent = item;
+    button.addEventListener("mousedown", (event) => event.preventDefault());
+    button.addEventListener("click", () => onSelect(item));
+    container.appendChild(button);
+  });
+  container.classList.toggle("visible", items.length > 0);
+};
+
+const hideSuggestions = (container) => {
+  container.classList.remove("visible");
+  container.innerHTML = "";
+};
+
+const getCurrentTagToken = (value) => {
+  const parts = value.split(",");
+  return parts[parts.length - 1].trim().toLowerCase();
+};
+
+const replaceCurrentTag = (value, replacement) => {
+  const parts = value.split(",");
+  const prefix = parts.slice(0, -1).map((part) => part.trim()).filter(Boolean);
+  const next = [...prefix, replacement].join(", ");
+  return `${next}, `;
+};
+
 const matchesBlacklist = (url, blacklist) => {
   if (!url) {
     return false;
@@ -68,12 +103,7 @@ const updateBlockedState = () => {
 const loadCategories = async () => {
   try {
     const categories = await fetchJson("/categories");
-    categoryList.innerHTML = "";
-    categories.forEach((category) => {
-      const option = document.createElement("option");
-      option.value = category.name;
-      categoryList.appendChild(option);
-    });
+    cachedCategories = categories.map((category) => category.name);
   } catch (error) {
     metadataStatus.textContent = "Failed to load categories.";
   }
@@ -82,9 +112,7 @@ const loadCategories = async () => {
 const loadTags = async () => {
   try {
     const tags = await fetchJson("/tags");
-    if (tags.length > 0) {
-      tagSuggestions.textContent = `Suggestions: ${tags.map((tag) => tag.name).join(" ")}`;
-    }
+    cachedTags = tags.map((tag) => tag.name);
   } catch (error) {
     metadataStatus.textContent = "Failed to load tag suggestions.";
   }
@@ -176,8 +204,116 @@ descriptionInput.addEventListener("input", () => {
   descriptionEdited = true;
 });
 
+const renderCategorySuggestions = () => {
+  const term = categoryInput.value.trim().toLowerCase();
+  categoryHighlight = 0;
+  const matches = cachedCategories
+    .filter((item) => item.toLowerCase().includes(term))
+    .slice(0, 6);
+
+  showSuggestions(categorySuggestions, matches, categoryHighlight, (selection) => {
+    categoryInput.value = selection;
+    hideSuggestions(categorySuggestions);
+  });
+};
+
+categoryInput.addEventListener("input", () => {
+  renderCategorySuggestions();
+});
+
+categoryInput.addEventListener("focus", () => {
+  renderCategorySuggestions();
+});
+
+categoryInput.addEventListener("keydown", (event) => {
+  const items = Array.from(categorySuggestions.querySelectorAll(".suggestion-item"));
+  if (items.length === 0) {
+    return;
+  }
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    categoryHighlight = Math.min(items.length - 1, categoryHighlight + 1);
+    items.forEach((item, index) => item.classList.toggle("active", index === categoryHighlight));
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    categoryHighlight = Math.max(0, categoryHighlight - 1);
+    items.forEach((item, index) => item.classList.toggle("active", index === categoryHighlight));
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const selection = items[categoryHighlight];
+    if (selection) {
+      categoryInput.value = selection.textContent;
+      hideSuggestions(categorySuggestions);
+    }
+  }
+});
+
+categoryInput.addEventListener("blur", () => {
+  window.setTimeout(() => hideSuggestions(categorySuggestions), 100);
+});
+
 tagsInput.addEventListener("input", () => {
   tagsEdited = true;
+  const token = getCurrentTagToken(tagsInput.value);
+  tagHighlight = 0;
+  if (!token) {
+    hideSuggestions(tagSuggestions);
+    return;
+  }
+
+  const existing = normalizeTags(tagsInput.value).map((tag) => tag.toLowerCase());
+  const matches = cachedTags
+    .filter((item) => item.toLowerCase().includes(token))
+    .filter((item) => !existing.includes(item.toLowerCase()))
+    .slice(0, 6);
+
+  showSuggestions(tagSuggestions, matches, tagHighlight, (selection) => {
+    tagsInput.value = replaceCurrentTag(tagsInput.value, selection);
+    tagsEdited = true;
+    hideSuggestions(tagSuggestions);
+  });
+});
+
+tagsInput.addEventListener("keydown", (event) => {
+  const items = Array.from(tagSuggestions.querySelectorAll(".suggestion-item"));
+  if (items.length === 0) {
+    return;
+  }
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    tagHighlight = Math.min(items.length - 1, tagHighlight + 1);
+    items.forEach((item, index) => item.classList.toggle("active", index === tagHighlight));
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    tagHighlight = Math.max(0, tagHighlight - 1);
+    items.forEach((item, index) => item.classList.toggle("active", index === tagHighlight));
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const selection = items[tagHighlight];
+    if (selection) {
+      tagsInput.value = replaceCurrentTag(tagsInput.value, selection.textContent);
+      tagsEdited = true;
+      hideSuggestions(tagSuggestions);
+    }
+  }
+});
+
+tagsInput.addEventListener("blur", () => {
+  window.setTimeout(() => hideSuggestions(tagSuggestions), 100);
 });
 
 form.addEventListener("submit", async (event) => {

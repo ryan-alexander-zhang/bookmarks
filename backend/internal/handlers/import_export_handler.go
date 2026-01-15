@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"bookmarks-backend/internal/services"
 
@@ -41,7 +43,8 @@ func RegisterImportExportRoutes(router *gin.RouterGroup, service *services.Impor
 			return
 		}
 
-		ctx.Header("Content-Disposition", "attachment; filename=bookmarks.html")
+		filename := fmt.Sprintf("bookmarks-%s.html", time.Now().Format("2006-01-02-15-04-05"))
+		ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 		ctx.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 	})
 }

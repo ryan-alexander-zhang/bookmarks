@@ -6,6 +6,17 @@ import { useParams, useRouter } from "next/navigation";
 import { BookmarkForm } from "@/components/bookmark-form";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { fetchJson } from "@/lib/api";
 import type { Bookmark } from "@/lib/types";
 
@@ -13,6 +24,7 @@ export default function EditBookmarkPage() {
   const params = useParams<{ id: string }>();
   const [bookmark, setBookmark] = useState<Bookmark | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -55,10 +67,28 @@ export default function EditBookmarkPage() {
           initialData={bookmark}
           onSuccess={() => router.push("/")}
           footerActions={
-            <Button variant="destructive" onClick={handleDelete} className="gap-2" type="button">
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
+            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="gap-2" type="button">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete bookmark</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Delete “{bookmark?.title}”? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={handleDelete}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           }
         />
       ) : (

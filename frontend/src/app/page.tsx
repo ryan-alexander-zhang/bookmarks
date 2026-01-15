@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Search, Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
+import { FilterMultiSelect } from "@/components/filter-multi-select";
 import { PageHeader } from "@/components/page-header";
 import { SectionCard } from "@/components/section-card";
 import { BookmarkTable } from "@/components/bookmark-table";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { API_BASE_URL, fetchJson } from "@/lib/api";
 import type { BookmarkListResponse, Category, Tag } from "@/lib/types";
 
@@ -16,11 +16,11 @@ export default function HomePage() {
   const [data, setData] = useState<BookmarkListResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
-  const [tag, setTag] = useState("");
   const [page, setPage] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const loadData = async (
     pageNumber = 1,
@@ -31,9 +31,9 @@ export default function HomePage() {
       const params = new URLSearchParams({
         page: pageNumber.toString(),
         page_size: "20",
-        q: overrides?.query ?? query,
-        category: overrides?.category ?? category,
-        tags: overrides?.tag ?? tag
+        q: query,
+        categories: selectedCategories.join(","),
+        tags: selectedTags.join(",")
       });
       const result = await fetchJson<BookmarkListResponse>(`/bookmarks?${params.toString()}`);
       setData(result);
@@ -43,6 +43,15 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTagClick = (tagName: string) => {
+    setSelectedTags((current) => (current.includes(tagName) ? current : [...current, tagName]));
+  };
+
+  const handleRemove = async (bookmarkId: string) => {
+    await fetchJson(`/bookmarks/${bookmarkId}`, { method: "DELETE" });
+    loadData(page);
   };
 
   useEffect(() => {
@@ -58,10 +67,12 @@ export default function HomePage() {
       .catch(() => undefined);
   }, []);
 
-  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    loadData(1, { query });
-  };
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      loadData(1);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [query, selectedCategories, selectedTags]);
 
   const handleExport = async () => {
     try {
@@ -72,8 +83,11 @@ export default function HomePage() {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename=([^;]+)/i);
+      const filename = match ? match[1].replace(/"/g, "") : "bookmarks.html";
       link.href = url;
-      link.download = "bookmarks.html";
+      link.download = filename;
       link.click();
       window.URL.revokeObjectURL(url);
     } catch {
@@ -104,66 +118,57 @@ export default function HomePage() {
         }
       />
 
-      <SectionCard title="Filters">
-        <form className="grid gap-4 md:grid-cols-4" onSubmit={handleSearch}>
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="Search by title, description, or URL"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-              <Button type="submit" variant="outline" className="px-3" disabled={loading}>
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <Select
-            value={category}
-            onChange={(event) => {
-              const value = event.target.value;
-              setCategory(value);
-              loadData(1, { category: value });
-            }}
-          >
-            <option value="">All categories</option>
-            {categories.map((item) => (
-              <option key={item.id} value={item.name}>
-                {item.name}
-              </option>
-            ))}
-          </Select>
-          <Select
-            value={tag}
-            onChange={(event) => {
-              const value = event.target.value;
-              setTag(value);
-              loadData(1, { tag: value });
-            }}
-          >
-            <option value="">All tags</option>
-            {tags.map((item) => (
-              <option key={item.id} value={item.name}>
-                {item.name}
-              </option>
-            ))}
-          </Select>
-        </form>
-      </SectionCard>
-
-      <SectionCard title="Results">
-        {data ? <BookmarkTable items={data.items} /> : <p className="text-sm">No data.</p>}
-        {data ? (
-          <div className="mt-4">
-            <Pagination
-              page={data.pagination.page}
-              pageSize={data.pagination.pageSize}
-              total={data.pagination.total}
-              onPageChange={(next) => loadData(next)}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="space-y-6">
+          <SectionCard title="Search">
+            <Input
+              placeholder="Search by title, description, or URL"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
             />
-          </div>
-        ) : null}
-      </SectionCard>
+          </SectionCard>
+
+          <SectionCard title="Results">
+            {data ? (
+              <BookmarkTable items={data.items} onTagClick={handleTagClick} onRemove={handleRemove} />
+            ) : (
+              <p className="text-sm">No data.</p>
+            )}
+            {data ? (
+              <div className="mt-4">
+                <Pagination
+                  page={data.pagination.page}
+                  pageSize={data.pagination.pageSize}
+                  total={data.pagination.total}
+                  onPageChange={(next) => loadData(next)}
+                />
+              </div>
+            ) : null}
+          </SectionCard>
+        </div>
+
+        <aside className="space-y-6">
+          <SectionCard title="Categories">
+            <FilterMultiSelect
+              label="Categories"
+              options={categories}
+              selected={selectedCategories}
+              onChange={setSelectedCategories}
+              searchPlaceholder="Search categories"
+            />
+          </SectionCard>
+          <SectionCard title="Tags">
+            <FilterMultiSelect
+              label="Tags"
+              options={tags}
+              selected={selectedTags}
+              onChange={setSelectedTags}
+              searchPlaceholder="Search tags"
+              groupDelimiter="/"
+            />
+          </SectionCard>
+        </aside>
+      </div>
     </div>
   );
 }

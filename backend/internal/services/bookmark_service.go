@@ -36,11 +36,12 @@ type BookmarkUpdateInput struct {
 }
 
 type BookmarkFilters struct {
-	Category string
-	Tags     []string
-	Query    string
-	Page     int
-	PageSize int
+	Category   string
+	Categories []string
+	Tags       []string
+	Query      string
+	Page       int
+	PageSize   int
 }
 
 func (service *BookmarkService) Create(ctx context.Context, input BookmarkInput) (*models.Bookmark, error) {
@@ -232,6 +233,11 @@ func (service *BookmarkService) List(ctx context.Context, filters BookmarkFilter
 	if filters.Category != "" {
 		args = append(args, utils.NormalizeName(filters.Category))
 		whereClauses = append(whereClauses, fmt.Sprintf("c.name = $%d", len(args)))
+	}
+	if len(filters.Categories) > 0 {
+		normalizedCategories := normalizeTags(filters.Categories)
+		args = append(args, normalizedCategories)
+		whereClauses = append(whereClauses, fmt.Sprintf("c.name = ANY($%d)", len(args)))
 	}
 	if len(filters.Tags) > 0 {
 		normalized := normalizeTags(filters.Tags)

@@ -106,7 +106,7 @@ Base URL: `/api`
 ### Bookmarks
 
 - `POST /bookmarks` create (auto-fill title/description if empty)
-- `GET /bookmarks` list with filters: `q`, `category`, `tags`, `page`, `page_size`
+- `GET /bookmarks` list with filters: `q`, `categories`, `tags`, `page`, `page_size`
 - `GET /bookmarks/lookup` prefill metadata and existing tags/categories
 - `GET /bookmarks/:id` detail
 - `PUT /bookmarks/:id` update (category/tag rename/delete supported)

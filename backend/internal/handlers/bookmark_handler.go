@@ -59,18 +59,24 @@ func RegisterBookmarkRoutes(router *gin.RouterGroup, service *services.BookmarkS
 		pageSize, _ := strconv.Atoi(ctx.DefaultQuery("page_size", "20"))
 		query := strings.TrimSpace(ctx.DefaultQuery("q", ""))
 		category := strings.TrimSpace(ctx.DefaultQuery("category", ""))
+		categoryParam := strings.TrimSpace(ctx.DefaultQuery("categories", ""))
 		tagParam := strings.TrimSpace(ctx.DefaultQuery("tags", ""))
 		var tags []string
 		if tagParam != "" {
 			tags = strings.Split(tagParam, ",")
 		}
+		var categories []string
+		if categoryParam != "" {
+			categories = strings.Split(categoryParam, ",")
+		}
 
 		list, err := service.List(ctx, services.BookmarkFilters{
-			Category: category,
-			Tags:     tags,
-			Query:    query,
-			Page:     page,
-			PageSize: pageSize,
+			Category:   category,
+			Categories: categories,
+			Tags:       tags,
+			Query:      query,
+			Page:       page,
+			PageSize:   pageSize,
 		})
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

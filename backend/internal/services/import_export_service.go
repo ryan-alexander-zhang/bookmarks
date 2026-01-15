@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"sort"
 	"strings"
 
 	"bookmarks-backend/internal/models"
@@ -56,49 +55,35 @@ func (service *ImportExportService) ExportHTML(ctx context.Context) (string, err
 		return "", err
 	}
 
-	grouped := map[string][]models.Bookmark{}
-	for _, bookmark := range bookmarks {
-		category := "Uncategorized"
-		if bookmark.CategoryName != nil && *bookmark.CategoryName != "" {
-			category = *bookmark.CategoryName
-		}
-		grouped[category] = append(grouped[category], bookmark)
-	}
-
-	categories := make([]string, 0, len(grouped))
-	for category := range grouped {
-		categories = append(categories, category)
-	}
-	sort.Strings(categories)
-
 	buffer := &bytes.Buffer{}
-	buffer.WriteString("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n")
-	buffer.WriteString("<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n")
-	buffer.WriteString("<TITLE>Bookmarks</TITLE>\n")
-	buffer.WriteString("<H1>Bookmarks</H1>\n")
-	buffer.WriteString("<DL><p>\n")
+	buffer.WriteString("<!DOCTYPE NETSCAPE-Bookmark-file-1>\n\n")
+	buffer.WriteString("<META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=UTF-8\">\n\n")
+	buffer.WriteString("<TITLE>Bookmarks</TITLE>\n\n")
+	buffer.WriteString("<H1>Bookmarks</H1>\n\n")
+	buffer.WriteString("<DL><p>\n\n")
 
-	for _, category := range categories {
-		buffer.WriteString(fmt.Sprintf("\t<DT><H3>%s</H3>\n", html.EscapeString(category)))
-		buffer.WriteString("\t<DL><p>\n")
-		items := grouped[category]
-		for _, bookmark := range items {
-			addDate := bookmark.CreatedAt.Unix()
-			tags := []string{}
-			for _, tag := range bookmark.Tags {
-				tags = append(tags, tag.Name)
-			}
-			tagAttr := ""
-			if len(tags) > 0 {
-				tagAttr = fmt.Sprintf(" TAGS=\"%s\"", html.EscapeString(strings.Join(tags, ",")))
-			}
-			buffer.WriteString(fmt.Sprintf("\t\t<DT><A HREF=\"%s\" ADD_DATE=\"%d\"%s>%s</A>\n",
-				html.EscapeString(bookmark.URL), addDate, tagAttr, html.EscapeString(bookmark.Title)))
-			if bookmark.Description != "" {
-				buffer.WriteString(fmt.Sprintf("\t\t<DD>%s\n", html.EscapeString(bookmark.Description)))
-			}
+	for _, bookmark := range bookmarks {
+		addDate := bookmark.CreatedAt.Unix()
+		lastModified := bookmark.UpdatedAt.Unix()
+		tags := []string{}
+		for _, tag := range bookmark.Tags {
+			tags = append(tags, tag.Name)
 		}
-		buffer.WriteString("\t</DL><p>\n")
+		tagAttr := ""
+		if len(tags) > 0 {
+			tagAttr = fmt.Sprintf(" TAGS=\"%s\"", html.EscapeString(strings.Join(tags, ",")))
+		}
+		categoryAttr := ""
+		if bookmark.CategoryName != nil && *bookmark.CategoryName != "" {
+			categoryAttr = fmt.Sprintf(" CATEGORY=\"%s\"", html.EscapeString(*bookmark.CategoryName))
+		}
+		buffer.WriteString(fmt.Sprintf("<DT><A HREF=\"%s\" ADD_DATE=\"%d\" LAST_MODIFIED=\"%d\"%s%s>%s</A>\n",
+			html.EscapeString(bookmark.URL), addDate, lastModified, tagAttr, categoryAttr, html.EscapeString(bookmark.Title)))
+		if bookmark.Description != "" {
+			buffer.WriteString(fmt.Sprintf("<DD>%s\n\n", html.EscapeString(bookmark.Description)))
+		} else {
+			buffer.WriteString("\n")
+		}
 	}
 
 	buffer.WriteString("</DL><p>\n")
@@ -128,13 +113,23 @@ func ParseNetscapeHTML(reader io.Reader) ([]ImportedBookmark, error) {
 					continue
 				}
 				if linkNode := findFirstElement(child, "a"); linkNode != nil {
+					entryCategory := category
+					if categoryAttr := strings.TrimSpace(getAttribute(linkNode, "category")); categoryAttr != "" {
+						entryCategory = categoryAttr
+					}
 					entry := ImportedBookmark{
 						URL:      getAttribute(linkNode, "href"),
 						Title:    strings.TrimSpace(extractText(linkNode)),
-						Category: category,
+						Category: entryCategory,
 					}
 					if tags := getAttribute(linkNode, "tags"); tags != "" {
-						entry.Tags = strings.Split(tags, ",")
+						split := strings.Split(tags, ",")
+						for _, tag := range split {
+							cleaned := strings.TrimSpace(tag)
+							if cleaned != "" {
+								entry.Tags = append(entry.Tags, cleaned)
+							}
+						}
 					}
 					if descNode := findNextElement(child, "dd"); descNode != nil {
 						entry.Description = strings.TrimSpace(extractText(descNode))
