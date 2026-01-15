@@ -148,6 +148,7 @@ export default function HomePage() {
               selected={selectedTags}
               onChange={setSelectedTags}
               searchPlaceholder="Search tags"
+              groupDelimiter="/"
             />
           </SectionCard>
         </aside>

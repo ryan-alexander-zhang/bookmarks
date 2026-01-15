@@ -24,6 +24,9 @@ export function BookmarkForm({ initialData, onSuccess, submitLabel, footerAction
   const [tags, setTags] = useState(initialData?.tags.map((tag) => tag.name) || []);
   const [categories, setCategories] = useState<Category[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [categoryQuery, setCategoryQuery] = useState(initialData?.categoryName || "");
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [categoryHighlight, setCategoryHighlight] = useState(0);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [metadataLoading, setMetadataLoading] = useState(false);
@@ -40,6 +43,11 @@ export function BookmarkForm({ initialData, onSuccess, submitLabel, footerAction
       })
       .catch(() => undefined);
   }, []);
+
+  const filteredCategories = categories
+    .map((item) => item.name)
+    .filter((name) => name.toLowerCase().includes(categoryQuery.trim().toLowerCase()))
+    .slice(0, 6);
 
   const fetchMetadata = async () => {
     if (initialData || !url) {
@@ -70,10 +78,13 @@ export function BookmarkForm({ initialData, onSuccess, submitLabel, footerAction
       if (!descriptionEdited && data.description) {
         setDescription(data.description);
       }
-      if (data.found) {
-        setCategory(data.category || "");
-        setTags(data.tags ? data.tags.map((tag) => tag.name) : []);
-      }
+       if (data.found) {
+         const nextCategory = data.category || "";
+         setCategory(nextCategory);
+         setCategoryQuery(nextCategory);
+         setTags(data.tags ? data.tags.map((tag) => tag.name) : []);
+       }
+
     } catch (error) {
       setMetadataMessage("Failed to fetch metadata.");
     } finally {
@@ -153,31 +164,71 @@ export function BookmarkForm({ initialData, onSuccess, submitLabel, footerAction
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
-        <Input
-          id="category"
-          list="category-list"
-          value={category || ""}
-          onChange={(event) => setCategory(event.target.value)}
-          placeholder="Optional"
-        />
-        <datalist id="category-list">
-          {categories.map((item) => (
-            <option key={item.id} value={item.name} />
-          ))}
-        </datalist>
-      </div>
+       <div className="space-y-2">
+         <Label htmlFor="category">Category</Label>
+         <div className="relative">
+           <Input
+             id="category"
+             value={categoryQuery}
+             onChange={(event) => {
+               setCategoryQuery(event.target.value);
+               setCategory(event.target.value);
+               setCategoryOpen(true);
+               setCategoryHighlight(0);
+             }}
+             onFocus={() => setCategoryOpen(true)}
+             onBlur={() => window.setTimeout(() => setCategoryOpen(false), 100)}
+             onKeyDown={(event) => {
+               if (!categoryOpen) {
+                 return;
+               }
+               if (event.key === "ArrowDown") {
+                 event.preventDefault();
+                 setCategoryHighlight((index) => Math.min(filteredCategories.length - 1, index + 1));
+               }
+               if (event.key === "ArrowUp") {
+                 event.preventDefault();
+                 setCategoryHighlight((index) => Math.max(0, index - 1));
+               }
+               if (event.key === "Enter" && filteredCategories[categoryHighlight]) {
+                 event.preventDefault();
+                 const selected = filteredCategories[categoryHighlight];
+                 setCategoryQuery(selected);
+                 setCategory(selected);
+                 setCategoryOpen(false);
+               }
+             }}
+             placeholder="Optional"
+           />
+           {categoryOpen && filteredCategories.length > 0 ? (
+             <div className="absolute z-10 mt-1 w-full rounded-md border bg-background shadow">
+               {filteredCategories.map((item, index) => (
+                 <button
+                   key={item}
+                   type="button"
+                   onMouseDown={(event) => event.preventDefault()}
+                   onClick={() => {
+                     setCategoryQuery(item);
+                     setCategory(item);
+                     setCategoryOpen(false);
+                   }}
+                   className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-muted ${
+                     index === categoryHighlight ? "bg-muted" : ""
+                   }`}
+                 >
+                   {item}
+                 </button>
+               ))}
+             </div>
+           ) : null}
+         </div>
+       </div>
 
-      <div className="space-y-2">
-        <Label>Tags</Label>
-        <TagInput value={tags} onChange={setTags} />
-        {availableTags.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Suggestions: {availableTags.map((tag) => tag.name).join(" ")}
-          </p>
-        ) : null}
-      </div>
+       <div className="space-y-2">
+         <Label>Tags</Label>
+         <TagInput value={tags} onChange={setTags} suggestions={availableTags.map((tag) => tag.name)} />
+       </div>
+
 
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
 
